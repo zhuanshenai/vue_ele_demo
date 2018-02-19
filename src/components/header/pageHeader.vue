@@ -190,7 +190,7 @@ export default {
 		height: 100%
 		background: rgba(7,17,27,0.8)
 		color: #fff
-		z-index: 20		
+		z-index: 50	
 		padding: 64px 36px 0 36px
 		box-sizing: border-box
 		.name

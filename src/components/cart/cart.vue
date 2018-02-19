@@ -1,146 +1,249 @@
 <template>
 	<div class='cart'>
-		<div class='section_left'>
-			<div class='cart_icon_wraper'>
-				<div class='cart_icon' :class='{hightlight: totalCount > 0}'>
-					<i class='icon icon-shopping_cart'></i>
-				</div>
-				<div class='num' v-show='totalCount > 0'>{{ totalCount }}</div>
+		<div class='section_left' @click='showInfo'>
+			<div class='logo_wrapper'>
+				<div class='logo' :class='{ active: totalCount > 0 }'><i class='icon icon-shopping_cart'></i></div>
+				<div class='count' v-show='totalCount > 0'>{{ totalCount }}</div>
 			</div>
-			<div class='total_price' :class='{hightlight: totalPrice > 0}'>{{ totalPrice | formatPrice }}</div>
-			<div class='description'>另需配送费{{ seller.deliveryPrice | formatPrice }}元</div>
+			<div class='desc_wrapper'>
+				<div class='total_price' :class='{ active: totalPrice > 0 }'>{{ totalPrice | formatePrice }}</div>
+				<div class='text'>另需配送费{{ seller.deliveryPrice | formatePrice }}元</div>
+			</div>
 		</div>
-		<div class='section_right' :class='{active: totalPrice >= seller.minPrice}'>
-			{{ delivery }}
+		<div class='section_right' :class='{ pay_active: payActive }'>{{ minDeliveryPrice }}</div>
+		<div class='cart_info' v-show='infoIsShow' @click='hideInfo'>
+			<div class='info_wrapper' @click.stop='testClick'>
+				<div class='title'>
+					<span class='text'>购物车</span>
+					<span class='clear' @click='clearCart'>清空</span>
+				</div>
+				<div class='content' ref='content_scroll'>
+					<ul class='select_food_list'>
+						<li v-for='item in selectedFood' class='select_food_item'>
+							<span class='name'>{{ item.name }}</span>
+							<span class='price'>{{ item.price | formatePrice }}</span>
+							<div class='add_wrapper'><add :food='item'></add></div>
+						</li>
+					</ul>
+				</div>
+			</div>
 		</div>
 	</div>
 </template>
 
 <script>
+import add from '../add/add'
+import BScroll from 'better-scroll'
 export default {
 	props: {
 		seller: Object,
-		selectFoods: {
-			type: Array,
-			default(){
-				return []
-			}
+		selectedFood: Array
+	},
+	data(){
+		return {
+			infoIsShow: false
 		}
 	},
-	computed: {
-		totalPrice(){
-			let totalPrice = 0;
-			this.selectFoods.forEach(item => {
-				totalPrice += item.price*item.count
-			})
-			return totalPrice
+	methods: {
+		showInfo(){
+			this.infoIsShow = this.totalCount > 0;
 		},
-		totalCount(){
-			let count = 0;
-			this.selectFoods.forEach(item => {
-				count += item.count;
+		clearCart(){
+			this.selectedFood.forEach(item => {
+				item.count = 0;
 			})
-			return count;
 		},
-		delivery(){
-			let minPrice = this.seller.minPrice;
-			if(this.totalPrice === 0){
-				return '￥20起送';
-			}
-			if(this.totalPrice < minPrice){
-				let diff = minPrice - this.totalPrice;
-				return `还差￥${diff}起送`
-			}else{
-				return '去结算'
-			}
+		hideInfo(){
+			this.infoIsShow = !this.infoIsShow;
+		},
+		testClick(){
+			return false;
 		}
 	},
 	filters: {
-		formatPrice(val){
+		formatePrice(val){
 			return `￥${val}`
 		}
+	},
+	mounted(){
+		this.$nextTick(() => {
+			this.contentScroll = new BScroll(this.$refs.content_scroll, { click: true })
+		})
+	},
+	computed: {
+		totalPrice(){
+			let total = 0;
+			this.selectedFood.forEach(item => {
+				total += item.price * item.count;
+			})
+			return total;
+		},
+		totalCount(){
+			let totalCount = 0;
+			this.selectedFood.forEach(item => {
+				totalCount += item.count;
+			})
+			return totalCount;
+		},
+		minDeliveryPrice(){
+			let diff = this.seller.minPrice - this.totalPrice;
+			if(this.totalPrice === 0){
+				return `￥${this.seller.minPrice}起送`
+			}
+			if(diff > 0){
+				return `还差￥${diff}起送`
+			}
+			return `去结算`
+		},
+		payActive(){
+			if(this.minDeliveryPrice === '去结算'){
+				return true;
+			}
+			return false;
+		}
+	},
+	components: {
+		add
 	}
 }	
 </script>
 
-<style scoped lang='sass'>
+<style lang='sass' scoped>
 .cart
 	display: flex
-	width: 100%
-	height: 48px
-	background: rgba(7,17,27,0.95)
 	position: fixed
+	z-index: 20
 	bottom: 0
-	left: 0	
+	left: 0
+	width: 100%
+	height: 48px	
+	//background: rgba(7,17,27,0.95)
 	.section_left
 		flex: 1 1 auto
 		display: flex
-		position: relative
-		.cart_icon_wraper
-			width: 56px
-			height: 56px
-			border-radius: 50%
+		background: rgba(7,17,27,0.95)
+		.logo_wrapper
 			background: rgba(7,17,27,0.95)
+			padding: 6px
 			margin: 0 12px
-			padding: 12px
-			box-sizing: border-box
 			position: relative
 			top: -10px
-			.cart_icon
+			width: 44px
+			height: 44px
+			border-radius: 50%
+			.logo
 				display: flex
-				align-items: center
 				justify-content: center
-				width: 100%
-				height: 100%
+				align-items: center
+				width: 44px
+				height: 44px
 				border-radius: 50%
 				background: rgba(255,255,255,0.1)
-				&.hightlight
-					background: #00a0dc
-					.icon
-						color: #fff
 				.icon
 					font-size: 20px
 					color: rgba(255,255,255,0.4)
-			.num
+				&.active
+					background: #00a0dc
+					.icon
+						color: #fff	
+			.count
+				width: 24px
+				height: 16px
+				background: #f01414
 				position: absolute
 				top: 0
 				right: 0
-				width: 24px
-				height: 16px
-				line-height: 16px
 				color: #fff
-				background: #f01414
+				line-height: 16px
 				text-align: center
-				box-shadow: 0 4px 8px 0 rgba(0,0,0,0.4)	
-				border-radius: 16px	
+				border-radius: 16px
 				font-size: 9px
-				font-weight: bold 
-		.total_price
-			font-size: 16px
-			line-height: 24px
-			margin: 12px 0
-			padding-right: 12px
-			color: rgba(255,255,255,0.4)	
-			border-right: 1px solid rgba(255,255,255,0.1)
-			font-weight: bold
-			&.hightlight
-				color: #fff		
-		.description
-			height: 100%
-			line-height: 48px
-			font-size: 10px
-			color: rgba(255,255,255,0.4)	
-			margin-left: 12px
-	.section_right	
-		flex: 0 0 auto
+				font-weight: bold
+				box-shadow: 0 4px 8px 0 rgba(0,0,0,0.4)
+		.desc_wrapper
+			display: flex
+			align-items: center
+			color: rgba(255,255,255,0.4)
+			//background: rgba(7,17,27,0.95)
+			.total_price
+				height: 24px
+				font-size: 16px
+				line-height: 24px
+				font-weight: bold
+				padding-right: 12px
+				border-right: 1px solid rgba(255,255,255,0.1)
+				&.active
+					color: #fff
+			.text
+				padding-left: 12px
+				font-size: 10px			
+	.section_right
+		flex: 0 0 auto	
 		width: 105px
-		background: #2b333b
-		color: rgba(255,255,255,0.4)
-		font-weight: bold
-		font-size: 12px
-		text-align: center
 		line-height: 48px
-		&.active
+		font-size: 12px
+		color: rgba(255,255,255,0.4)
+		text-align: center
+		background: #2b333b
+		font-weight: bold
+		&.pay_active
 			background: #00b43c
 			color: #fff
+	.cart_info
+		position: fixed
+		bottom: 0
+		left: 0
+		z-index: -1
+		width: 100%
+		height: 100%
+		background: rgba(7,17,27,0.6)
+		.info_wrapper
+			position: absolute
+			bottom: 0
+			left: 0
+			width: 100%
+			height: auto
+			padding-bottom: 70px
+			background: #fff
+			.title
+				display: flex
+				justify-content: space-between
+				align-items: center
+				padding: 0 18px
+				width: 100%
+				height: 39px
+				box-sizing: border-box
+				background: #f3f5f7
+				border-bottom: 1px solid #dbdee1
+				.text
+					font-size: 14px
+					color: #07111b
+				.clear	
+					font-size: 12px
+					font-weight: 400
+					color: #00a0dc
+			.content	
+				background: #fff
+				max-height: 258px
+				overflow: hidden
+				.select_food_list
+					padding: 0 18px
+					.select_food_item
+						display: flex
+						align-items: center
+						height: 48px
+						border-bottom: 1px solid #e6e7e8
+						.name
+							flex: 1 1 auto
+							font-size: 14px
+							color: #07111b
+							font-weight: 400
+						.price
+							flex: 0 0 auto
+							font-size: 14px 
+							color: #f01414
+							font-weight: bold
+							margin-right: 15px
+						.add_wrapper
+							flex: 0 0 auto
 </style>
